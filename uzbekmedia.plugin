@@ -61,9 +61,7 @@ class UzbekMedia(BasePlugin):
         if not isinstance(getattr(params, "message", None), str):
             return HookResult()
 
-        text = params.message.strip()
-        parts = text.split(" ", 1)
-        command = parts[0].lower()
+        command = params.message.strip().lower()
 
         if command in COMMAND_URLS:
             target_url = COMMAND_URLS[command]
