@@ -8,11 +8,11 @@ from hook_utils import find_class
 
 __id__ = "uzbekmedia"
 __name__ = "UzbekMedia"
-__description__ = "Opens Booru Websites in Telegram's built-in browser."
+__description__ = "Open Booru Websites in Telegram's built-in browser."
 __author__ = "@GNUParsast"
 __version__ = "1.0.0"
 __icon__ = "exteraPlugins/1"
-__app_version__ = ">=12.5.1"
+__min_version__ = "12.1.1"
 
 COMMAND_URLS = {
     ".danbooru": "https://danbooru.donmai.us",
