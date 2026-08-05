@@ -1,0 +1,77 @@
+import urllib.parse
+from typing import Any
+
+from android_utils import run_on_ui_thread
+from base_plugin import BasePlugin, HookResult, HookStrategy
+from client_utils import get_last_fragment
+from hook_utils import find_class
+
+__id__ = "uzbekmedia"
+__name__ = "UzbekMedia"
+__description__ = "Opens Booru Websites in Telegram's built-in browser."
+__author__ = "@GNUParsast"
+__version__ = "1.0.0"
+__icon__ = "exteraPlugins/1"
+__app_version__ = ">=12.5.1"
+
+COMMAND_URLS = {
+    ".danbooru": "https://danbooru.donmai.us",
+    ".yandere": "https://yande.re",
+    ".konachan": "https://konachan.com",
+    ".safebooru": "https://safebooru.org",
+    ".waifuim": "https://waifu.im",
+    ".r34": "https://rule34.xxx",
+}
+
+
+class UzbekMedia(BasePlugin):
+    def on_plugin_load(self):
+        self.add_on_send_message_hook()
+
+    def _open_in_app_browser_ui(self, url: str):
+        def task():
+            try:
+                fragment = get_last_fragment()
+                context = fragment.getParentActivity() if fragment else None
+
+                if not context:
+                    AppLoader = find_class("org.telegram.messenger.ApplicationLoader")
+                    context = getattr(AppLoader, "applicationContext", None)
+
+                if not context:
+                    self.log("Could not obtain Android context.")
+                    return
+
+                Uri = find_class("android.net.Uri")
+                uri_obj = Uri.parse(url)
+
+                Browser = find_class("org.telegram.messenger.browser.Browser")
+                if not Browser:
+                    self.log("Browser class not found.")
+                    return
+
+                Browser.openUrl(context, uri_obj, True, True)
+
+            except Exception as e:
+                self.log(f"Error opening browser: {e}")
+
+        run_on_ui_thread(task)
+
+    def on_send_message_hook(self, account: int, params: Any) -> HookResult:
+        if not isinstance(getattr(params, "message", None), str):
+            return HookResult()
+
+        text = params.message.strip()
+        parts = text.split(" ", 1)
+        command = parts[0].lower()
+
+        if command in COMMAND_URLS:
+            query = parts[1].strip() if len(parts) > 1 else ""
+            encoded_query = urllib.parse.quote_plus(query)
+            target_url = COMMAND_URLS[command].format(query=encoded_query)
+
+            self._open_in_app_browser_ui(target_url)
+
+            return HookResult(strategy=HookStrategy.CANCEL)
+
+        return HookResult()
