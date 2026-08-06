@@ -10,17 +10,17 @@ __id__ = "uzbekmedia"
 __name__ = "UzbekMedia"
 __description__ = "Open Booru Websites in Telegram's built-in browser."
 __author__ = "@GNUParsast"
-__version__ = "1.0.0"
+__version__ = "1.0.1"
 __icon__ = "exteraPlugins/1"
 __min_version__ = "12.1.1"
 
-COMMAND_URLS = {
-    ".danbooru": "https://danbooru.donmai.us",
-    ".yandere": "https://yande.re",
-    ".konachan": "https://konachan.com",
-    ".safebooru": "https://safebooru.org",
-    ".waifuim": "https://waifu.im",
-    ".r34": "https://rule34.xxx",
+BASE_URLS = {
+    ".danbooru": "https://danbooru.donmai.us/posts",
+    ".yandere": "https://yande.re/post",
+    ".konachan": "https://konachan.com/post",
+    ".safebooru": "https://safebooru.org/index.php?page=post&s=list",
+    ".waifuim": "https://www.waifu.im/search",
+    ".r34": "https://rule34.xxx/index.php?page=post&s=list",
 }
 
 
@@ -57,14 +57,35 @@ class UzbekMedia(BasePlugin):
 
         run_on_ui_thread(task)
 
+    def _build_url(self, command: str, query: str) -> str:
+        tags = [tag.strip() for tag in query.split() if tag.strip()]
+
+        if command == ".waifuim":
+            if not tags:
+                return "https://www.waifu.im/gallery"
+            query_str = "&".join(f"includedTags={urllib.parse.quote_plus(tag)}" for tag in tags)
+            return f"https://www.waifu.im/gallery?orderBy=Random&{query_str}"
+
+        formatted_query = "+".join(urllib.parse.quote_plus(tag) for tag in tags)
+
+        if not formatted_query:
+            return BASE_URLS[command]
+
+        base = BASE_URLS[command]
+        delimiter = "&" if "?" in base else "?"
+        return f"{base}{delimiter}tags={formatted_query}"
+
     def on_send_message_hook(self, account: int, params: Any) -> HookResult:
         if not isinstance(getattr(params, "message", None), str):
             return HookResult()
 
-        command = params.message.strip().lower()
+        text = params.message.strip()
+        parts = text.split(" ", 1)
+        command = parts[0].lower()
 
-        if command in COMMAND_URLS:
-            target_url = COMMAND_URLS[command]
+        if command in BASE_URLS:
+            query = parts[1].strip() if len(parts) > 1 else ""
+            target_url = self._build_url(command, query)
 
             self._open_in_app_browser_ui(target_url)
 
