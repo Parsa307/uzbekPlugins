@@ -10,7 +10,7 @@ __id__ = "uzbekmedia"
 __name__ = "UzbekMedia"
 __description__ = "Open Booru Websites in Telegram's built-in browser."
 __author__ = "@GNUParsast"
-__version__ = "1.0.1"
+__version__ = "1.0.0"
 __icon__ = "exteraPlugins/1"
 __min_version__ = "12.1.1"
 
@@ -19,7 +19,7 @@ BASE_URLS = {
     ".yandere": "https://yande.re/post",
     ".konachan": "https://konachan.com/post",
     ".safebooru": "https://safebooru.org/index.php?page=post&s=list",
-    ".waifuim": "https://www.waifu.im/search",
+    ".waifuim": "https://www.waifu.im/gallery?orderBy=Random&isNsfw=All",
     ".r34": "https://rule34.xxx/index.php?page=post&s=list",
 }
 
@@ -60,17 +60,14 @@ class UzbekMedia(BasePlugin):
     def _build_url(self, command: str, query: str) -> str:
         tags = [tag.strip() for tag in query.split() if tag.strip()]
 
-        if command == ".waifuim":
-            if not tags:
-                return "https://www.waifu.im/gallery"
-            query_str = "&".join(f"includedTags={urllib.parse.quote_plus(tag)}" for tag in tags)
-            return f"https://www.waifu.im/gallery?orderBy=Random&{query_str}"
-
-        formatted_query = "+".join(urllib.parse.quote_plus(tag) for tag in tags)
-
-        if not formatted_query:
+        if not tags:
             return BASE_URLS[command]
 
+        if command == ".waifuim":
+            query_str = "&".join(f"includedTags={urllib.parse.quote_plus(tag)}" for tag in tags)
+            return f"{BASE_URLS[command]}&{query_str}"
+
+        formatted_query = "+".join(urllib.parse.quote_plus(tag) for tag in tags)
         base = BASE_URLS[command]
         delimiter = "&" if "?" in base else "?"
         return f"{base}{delimiter}tags={formatted_query}"
